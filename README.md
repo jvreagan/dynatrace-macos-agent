@@ -82,11 +82,12 @@ The agent starts automatically when you launch it. Quit the app to stop it.
 Requires Xcode command line tools and Swift 5.9+.
 
 ```bash
-git clone https://github.com/YOUR_ORG/dynatrace-macos-agent
+git clone https://github.com/your-username/dynatrace-macos-agent
 cd dynatrace-macos-agent
 Scripts/build-dmg.sh
-open build/DynatraceAgent.dmg
 ```
+
+Then open `build/DynatraceAgent.dmg` and drag the app to Applications.
 
 ## License
 
