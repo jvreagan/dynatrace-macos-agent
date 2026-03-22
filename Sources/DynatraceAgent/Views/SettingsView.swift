@@ -123,6 +123,13 @@ struct SettingsView: View {
                             }
                         }
 
+                        if !isFirstRun {
+                            Button(configManager.dashboardId == nil ? "Create Dashboard" : "Re-create Dashboard") {
+                                createDashboard()
+                            }
+                            .disabled(isSaving || configManager.oauthClientId.isEmpty || oauthClientSecret.isEmpty)
+                        }
+
                         if isSaving {
                             ProgressView().controlSize(.small)
                         }
@@ -182,6 +189,32 @@ struct SettingsView: View {
     }
 
     // MARK: - Actions
+
+    private func createDashboard() {
+        isSaving = true
+        saveMessage = ""
+        _ = KeychainService.saveOAuthSecret(oauthClientSecret)
+        Task { @MainActor in
+            let service = DashboardService(logManager: logManager)
+            do {
+                let id = try await service.createDashboard(
+                    oauthManager: oauthManager,
+                    environmentURL: configManager.environmentURL,
+                    clientId: configManager.oauthClientId,
+                    clientSecret: oauthClientSecret,
+                    tokenURL: ConfigurationManager.oauthTokenURL,
+                    dashboardName: configManager.dashboardName
+                )
+                configManager.dashboardId = id
+                saveIsError = false
+                saveMessage = "Dashboard created"
+            } catch {
+                saveIsError = true
+                saveMessage = "Dashboard error: \(error.localizedDescription)"
+            }
+            isSaving = false
+        }
+    }
 
     private func save() {
         isSaving = true
