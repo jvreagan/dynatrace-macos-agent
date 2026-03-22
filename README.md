@@ -36,7 +36,7 @@ You need two things from your Dynatrace environment:
 
 ### 1. API Token (for sending metrics)
 
-1. In Dynatrace, go to **Settings → Access Tokens → Generate new token**
+1. In Dynatrace, go to **Settings → Environment Segmentation → Access Tokens → Generate new token**
 2. Give it a name (e.g. `macos-agent`)
 3. Add the scope: **`metrics.ingest`**
 4. Copy the token
