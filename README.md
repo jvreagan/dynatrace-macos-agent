@@ -43,7 +43,7 @@ You need two things from your Dynatrace environment:
 
 ### 2. OAuth Client (for the dashboard)
 
-1. In Dynatrace, go to **Settings → OAuth Clients → Create client**
+1. In Dynatrace, go to **Account Management → Identity & Access Management → OAuth Clients → Create client**
 2. Give it a name (e.g. `macos-agent-dashboard`)
 3. Add the scope: **`document:documents:write`**
 4. Copy the **Client ID** and **Client Secret**
