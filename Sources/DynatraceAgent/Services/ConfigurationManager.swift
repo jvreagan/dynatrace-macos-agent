@@ -1,4 +1,5 @@
 import Foundation
+import ServiceManagement
 
 @MainActor
 final class ConfigurationManager: ObservableObject {
@@ -11,6 +12,7 @@ final class ConfigurationManager: ObservableObject {
         static let oauthClientId = "dynatrace.oauthClientId"
         static let dashboardName = "dynatrace.dashboardName"
         static let dashboardId = "dynatrace.dashboardId"
+        static let launchAtLogin = "dynatrace.launchAtLogin"
     }
 
     @Published var environmentURL: String {
@@ -31,6 +33,17 @@ final class ConfigurationManager: ObservableObject {
 
     @Published var dashboardName: String {
         didSet { UserDefaults.standard.set(dashboardName, forKey: Keys.dashboardName) }
+    }
+
+    @Published var launchAtLogin: Bool {
+        didSet {
+            UserDefaults.standard.set(launchAtLogin, forKey: Keys.launchAtLogin)
+            if launchAtLogin {
+                try? SMAppService.mainApp.register()
+            } else {
+                try? SMAppService.mainApp.unregister()
+            }
+        }
     }
 
     var dashboardId: String? {
@@ -57,5 +70,6 @@ final class ConfigurationManager: ObservableObject {
         self.hostnameOverride = UserDefaults.standard.string(forKey: Keys.hostnameOverride) ?? ""
         self.oauthClientId = UserDefaults.standard.string(forKey: Keys.oauthClientId) ?? ""
         self.dashboardName = UserDefaults.standard.string(forKey: Keys.dashboardName) ?? "macOS Metrics"
+        self.launchAtLogin = UserDefaults.standard.bool(forKey: Keys.launchAtLogin)
     }
 }

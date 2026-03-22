@@ -94,6 +94,8 @@ struct SettingsView: View {
                             .frame(maxWidth: 280)
                         }
 
+                        Toggle("Launch at login", isOn: $configManager.launchAtLogin)
+
                         field("Hostname Override", hint: "Leave blank to use \"\(Host.current().localizedName ?? "system hostname")\"") {
                             TextField("", text: $configManager.hostnameOverride)
                                 .textFieldStyle(.roundedBorder)

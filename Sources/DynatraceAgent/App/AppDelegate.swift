@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -11,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var oauthManager: OAuthManager!
     private var collectionTimer: Timer?
     private var isMonitoring = false
+    private var consecutiveFailures = 0
+    private let failureNotificationThreshold = 3
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configManager = ConfigurationManager()
@@ -32,6 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupMainMenu()
 
         logManager.log("Dynatrace Agent started")
+
+        requestNotificationPermission()
 
         if configManager.isConfigured {
             startMonitoring()
@@ -99,11 +104,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let success = await dynatraceAPI.send(metrics: metrics)
             if success {
+                self.consecutiveFailures = 0
                 self.menuBarManager.updateStatus(.collecting)
                 self.logManager.log("Metrics sent successfully")
             } else {
+                self.consecutiveFailures += 1
                 self.menuBarManager.updateStatus(.error)
                 self.logManager.log("Failed to send metrics", level: .error)
+                if self.consecutiveFailures == self.failureNotificationThreshold {
+                    self.sendFailureNotification()
+                }
             }
         }
     }
@@ -157,6 +167,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 logManager.log("Dashboard creation failed: \(error.localizedDescription)", level: .error)
             }
         }
+    }
+
+    // MARK: - Notifications
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    private func sendFailureNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Dynatrace Agent"
+        content.body = "Metrics have failed to send \(failureNotificationThreshold) times in a row. Check your settings."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "metrics-failure",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
 
     // MARK: - Windows
