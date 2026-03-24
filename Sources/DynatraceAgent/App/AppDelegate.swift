@@ -3,7 +3,7 @@ import SwiftUI
 import UserNotifications
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var menuBarManager: MenuBarManager!
     private var configManager: ConfigurationManager!
     private var logManager: LogManager!
@@ -165,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 logManager.log("Dashboard created (ID: \(id))")
             } catch {
                 logManager.log("Dashboard creation failed: \(error.localizedDescription)", level: .error)
+                await MainActor.run { self.menuBarManager.updateStatus(.warning) }
             }
         }
     }
@@ -208,6 +209,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             oauthManager: oauthManager,
             onSave: { [weak self] in
                 guard let self else { return }
+                self.consecutiveFailures = 0
                 self.settingsWindow?.close()
                 self.settingsWindow = nil
                 if !self.isMonitoring {
@@ -227,6 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         window.isReleasedWhenClosed = false
+        window.delegate = self
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow = window
     }
@@ -250,7 +253,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         window.isReleasedWhenClosed = false
+        window.delegate = self
         NSApp.activate(ignoringOtherApps: true)
         logWindow = window
+    }
+
+    // MARK: - NSWindowDelegate
+
+    nonisolated func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        MainActor.assumeIsolated {
+            if window === settingsWindow { settingsWindow = nil }
+            else if window === logWindow { logWindow = nil }
+        }
     }
 }

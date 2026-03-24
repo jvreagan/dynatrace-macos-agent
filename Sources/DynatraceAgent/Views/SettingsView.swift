@@ -193,7 +193,12 @@ struct SettingsView: View {
     private func createDashboard() {
         isSaving = true
         saveMessage = ""
-        _ = KeychainService.saveOAuthSecret(oauthClientSecret)
+        if !oauthClientSecret.isEmpty && !KeychainService.saveOAuthSecret(oauthClientSecret) {
+            isSaving = false
+            saveIsError = true
+            saveMessage = "Failed to save OAuth secret to Keychain"
+            return
+        }
         Task { @MainActor in
             let service = DashboardService(logManager: logManager)
             do {
@@ -230,8 +235,20 @@ struct SettingsView: View {
         }
         configManager.environmentURL = cleaned
 
-        _ = KeychainService.saveToken(apiToken)
-        _ = KeychainService.saveOAuthSecret(oauthClientSecret)
+        guard KeychainService.saveToken(apiToken) else {
+            isSaving = false
+            saveIsError = true
+            saveMessage = "Failed to save API token to Keychain"
+            return
+        }
+        if !oauthClientSecret.isEmpty {
+            guard KeychainService.saveOAuthSecret(oauthClientSecret) else {
+                isSaving = false
+                saveIsError = true
+                saveMessage = "Failed to save OAuth secret to Keychain"
+                return
+            }
+        }
         logManager.log("Settings saved")
 
         // Test connection then callback
