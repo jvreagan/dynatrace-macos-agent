@@ -127,51 +127,68 @@ struct DashboardService {
 
     private func buildDashboardContentJSON() -> String {
         let tiles: [String: Any] = [
-            "0": [
-                "type": "data",
-                "title": "CPU Usage %",
-                "query": "timeseries cpu=avg(macos.cpu.usage), by:{host.name}",
-                "visualization": "lineChart"
-            ],
-            "1": [
-                "type": "data",
-                "title": "Memory Usage %",
-                "query": "timeseries mem=avg(macos.memory.usage), by:{host.name}",
-                "visualization": "lineChart"
-            ],
-            "2": [
-                "type": "data",
-                "title": "Disk Usage %",
-                "query": "timeseries disk=avg(macos.disk.usage), by:{device, host.name}",
-                "visualization": "lineChart"
-            ],
-            "3": [
-                "type": "data",
-                "title": "Network Traffic (bytes/s)",
-                "query": "timeseries net_in=avg(macos.network.bytes_in), net_out=avg(macos.network.bytes_out), by:{interface, host.name}",
-                "visualization": "lineChart"
-            ],
-            "4": [
-                "type": "data",
-                "title": "System Load Average",
-                "query": "timeseries load1=avg(macos.load.1m), load5=avg(macos.load.5m), load15=avg(macos.load.15m), by:{host.name}",
-                "visualization": "lineChart"
-            ],
-            "5": [
-                "type": "data",
-                "title": "Swap Usage %",
-                "query": "timeseries swap=avg(macos.swap.usage), by:{host.name}",
-                "visualization": "lineChart"
-            ]
+            // Row 1 — CPU & Memory
+            "0": ["type": "data", "title": "CPU Usage %",
+                  "query": "timeseries cpu=avg(macos.cpu.usage), by:{host.name}",
+                  "visualization": "lineChart"],
+            "1": ["type": "data", "title": "Memory Usage %",
+                  "query": "timeseries mem=avg(macos.memory.usage), by:{host.name}",
+                  "visualization": "lineChart"],
+            // Row 2 — Disk & Swap
+            "2": ["type": "data", "title": "Disk Usage %",
+                  "query": "timeseries disk=avg(macos.disk.usage), by:{device, host.name}",
+                  "visualization": "lineChart"],
+            "3": ["type": "data", "title": "Swap Usage %",
+                  "query": "timeseries swap=avg(macos.swap.usage), by:{host.name}",
+                  "visualization": "lineChart"],
+            // Row 3 — Disk I/O
+            "4": ["type": "data", "title": "Disk I/O (bytes/s)",
+                  "query": "timeseries read=avg(macos.disk.io.read_bytes), write=avg(macos.disk.io.write_bytes), by:{device, host.name}",
+                  "visualization": "lineChart"],
+            // Row 4 — Network
+            "5": ["type": "data", "title": "Network Traffic (bytes/s)",
+                  "query": "timeseries net_in=avg(macos.network.bytes_in), net_out=avg(macos.network.bytes_out), by:{interface, host.name}",
+                  "visualization": "lineChart"],
+            "6": ["type": "data", "title": "Network Errors & Drops",
+                  "query": "timeseries err_in=avg(macos.network.errors_in), err_out=avg(macos.network.errors_out), drops=avg(macos.network.drops_in), by:{interface, host.name}",
+                  "visualization": "lineChart"],
+            // Row 5 — GPU & Thermal
+            "7": ["type": "data", "title": "GPU Usage %",
+                  "query": "timeseries gpu=avg(macos.gpu.usage), by:{host.name}",
+                  "visualization": "lineChart"],
+            "8": ["type": "data", "title": "Thermal State (0=nominal 3=critical)",
+                  "query": "timeseries thermal=avg(macos.thermal.state), by:{host.name}",
+                  "visualization": "lineChart"],
+            // Row 6 — Load & Processes
+            "9": ["type": "data", "title": "System Load Average",
+                  "query": "timeseries load1=avg(macos.load.1m), load5=avg(macos.load.5m), load15=avg(macos.load.15m), by:{host.name}",
+                  "visualization": "lineChart"],
+            "10": ["type": "data", "title": "Process Count",
+                   "query": "timeseries procs=avg(macos.process.count), by:{host.name}",
+                   "visualization": "lineChart"],
+            // Row 7 — Battery
+            "11": ["type": "data", "title": "Battery Level %",
+                   "query": "timeseries battery=avg(macos.battery.level), by:{host.name}",
+                   "visualization": "lineChart"],
+            "12": ["type": "data", "title": "Top Processes by Memory",
+                   "query": "timeseries mem=avg(macos.process.top_memory_bytes), by:{process, host.name}",
+                   "visualization": "lineChart"],
         ]
 
         let layouts: [String: Any] = [
-            "0": ["x": 0, "y": 0,  "w": 12, "h": 4],
-            "1": ["x": 0, "y": 4,  "w": 12, "h": 4],
-            "2": ["x": 0, "y": 8,  "w": 6,  "h": 4],
-            "3": ["x": 6, "y": 8,  "w": 6,  "h": 4],
-            "4": ["x": 0, "y": 12, "w": 12, "h": 4],
-            "5": ["x": 0, "y": 16, "w": 12, "h": 4]
+            "0":  ["x": 0,  "y": 0,  "w": 6,  "h": 4],
+            "1":  ["x": 6,  "y": 0,  "w": 6,  "h": 4],
+            "2":  ["x": 0,  "y": 4,  "w": 6,  "h": 4],
+            "3":  ["x": 6,  "y": 4,  "w": 6,  "h": 4],
+            "4":  ["x": 0,  "y": 8,  "w": 12, "h": 4],
+            "5":  ["x": 0,  "y": 12, "w": 6,  "h": 4],
+            "6":  ["x": 6,  "y": 12, "w": 6,  "h": 4],
+            "7":  ["x": 0,  "y": 16, "w": 6,  "h": 4],
+            "8":  ["x": 6,  "y": 16, "w": 6,  "h": 4],
+            "9":  ["x": 0,  "y": 20, "w": 6,  "h": 4],
+            "10": ["x": 6,  "y": 20, "w": 6,  "h": 4],
+            "11": ["x": 0,  "y": 24, "w": 6,  "h": 4],
+            "12": ["x": 6,  "y": 24, "w": 6,  "h": 4],
         ]
 
         let content: [String: Any] = [

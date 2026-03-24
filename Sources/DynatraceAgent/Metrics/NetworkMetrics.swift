@@ -3,6 +3,7 @@ import Darwin
 
 final class NetworkMetrics {
     private var previousBytes: [String: (bytesIn: UInt64, bytesOut: UInt64)] = [:]
+    private var previousErrors: [String: (errorsIn: UInt64, errorsOut: UInt64, dropsIn: UInt64, dropsOut: UInt64)] = [:]
 
     func collect(hostname: String) -> [MetricPoint] {
         let now = Date()
@@ -14,27 +15,31 @@ final class NetworkMetrics {
         }
         defer { freeifaddrs(ifaddr) }
 
-        // Aggregate bytes per interface name
+        // Aggregate stats per interface name
         var currentBytes: [String: (bytesIn: UInt64, bytesOut: UInt64)] = [:]
+        var currentErrors: [String: (errorsIn: UInt64, errorsOut: UInt64, dropsIn: UInt64, dropsOut: UInt64)] = [:]
 
         var cursor: UnsafeMutablePointer<ifaddrs>? = firstAddr
         while let addr = cursor {
             let name = String(cString: addr.pointee.ifa_name)
 
-            // Only AF_LINK (data link layer) has byte counts
-            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK) {
-                // Skip loopback
-                if name != "lo0" {
-                    let data = unsafeBitCast(addr.pointee.ifa_data, to: UnsafeMutablePointer<if_data>.self)
-                    let bytesIn = UInt64(data.pointee.ifi_ibytes)
-                    let bytesOut = UInt64(data.pointee.ifi_obytes)
+            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK), name != "lo0" {
+                let data = unsafeBitCast(addr.pointee.ifa_data, to: UnsafeMutablePointer<if_data>.self)
+                let d = data.pointee
 
-                    let existing = currentBytes[name] ?? (bytesIn: 0, bytesOut: 0)
-                    currentBytes[name] = (
-                        bytesIn: existing.bytesIn + bytesIn,
-                        bytesOut: existing.bytesOut + bytesOut
-                    )
-                }
+                let existing = currentBytes[name] ?? (bytesIn: 0, bytesOut: 0)
+                currentBytes[name] = (
+                    bytesIn: existing.bytesIn + UInt64(d.ifi_ibytes),
+                    bytesOut: existing.bytesOut + UInt64(d.ifi_obytes)
+                )
+
+                let existingErr = currentErrors[name] ?? (errorsIn: 0, errorsOut: 0, dropsIn: 0, dropsOut: 0)
+                currentErrors[name] = (
+                    errorsIn: existingErr.errorsIn + UInt64(d.ifi_ierrors),
+                    errorsOut: existingErr.errorsOut + UInt64(d.ifi_oerrors),
+                    dropsIn: existingErr.dropsIn + UInt64(d.ifi_iqdrops),
+                    dropsOut: 0
+                )
             }
 
             cursor = addr.pointee.ifa_next
@@ -42,23 +47,27 @@ final class NetworkMetrics {
 
         // Compute deltas
         for (iface, current) in currentBytes {
+            let dims: [String: String] = ["host.name": hostname, "interface": iface]
+
             if let prev = previousBytes[iface] {
                 let deltaIn = current.bytesIn >= prev.bytesIn ? current.bytesIn - prev.bytesIn : current.bytesIn
                 let deltaOut = current.bytesOut >= prev.bytesOut ? current.bytesOut - prev.bytesOut : current.bytesOut
+                metrics.append(MetricPoint(key: "macos.network.bytes_in", dimensions: dims, value: Double(deltaIn), timestamp: now))
+                metrics.append(MetricPoint(key: "macos.network.bytes_out", dimensions: dims, value: Double(deltaOut), timestamp: now))
+            }
 
-                let dims: [String: String] = [
-                    "host.name": hostname,
-                    "interface": iface
-                ]
-
-                metrics.append(contentsOf: [
-                    MetricPoint(key: "macos.network.bytes_in", dimensions: dims, value: Double(deltaIn), timestamp: now),
-                    MetricPoint(key: "macos.network.bytes_out", dimensions: dims, value: Double(deltaOut), timestamp: now),
-                ])
+            if let prevErr = previousErrors[iface], let currErr = currentErrors[iface] {
+                let deltaErrIn = currErr.errorsIn >= prevErr.errorsIn ? currErr.errorsIn - prevErr.errorsIn : currErr.errorsIn
+                let deltaErrOut = currErr.errorsOut >= prevErr.errorsOut ? currErr.errorsOut - prevErr.errorsOut : currErr.errorsOut
+                let deltaDropIn = currErr.dropsIn >= prevErr.dropsIn ? currErr.dropsIn - prevErr.dropsIn : currErr.dropsIn
+                metrics.append(MetricPoint(key: "macos.network.errors_in", dimensions: dims, value: Double(deltaErrIn), timestamp: now))
+                metrics.append(MetricPoint(key: "macos.network.errors_out", dimensions: dims, value: Double(deltaErrOut), timestamp: now))
+                metrics.append(MetricPoint(key: "macos.network.drops_in", dimensions: dims, value: Double(deltaDropIn), timestamp: now))
             }
         }
 
         previousBytes = currentBytes
+        previousErrors = currentErrors
         return metrics
     }
 }
