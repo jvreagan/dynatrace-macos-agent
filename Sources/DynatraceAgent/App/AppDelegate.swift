@@ -104,9 +104,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Task {
             let success = await dynatraceAPI.send(metrics: metrics)
             if success {
+                let wasFailing = self.consecutiveFailures >= self.failureNotificationThreshold
                 self.consecutiveFailures = 0
                 self.menuBarManager.updateStatus(.collecting)
                 self.logManager.log("Metrics sent successfully")
+                if wasFailing {
+                    self.sendRecoveryNotification()
+                }
             } else {
                 self.consecutiveFailures += 1
                 self.menuBarManager.updateStatus(.error)
@@ -184,6 +188,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let request = UNNotificationRequest(
             identifier: "metrics-failure",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+
+    private func sendRecoveryNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Dynatrace Agent"
+        content.body = "Metrics are sending successfully again."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "metrics-recovery",
             content: content,
             trigger: nil
         )
