@@ -91,6 +91,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    private func restartTimer() {
+        collectionTimer?.invalidate()
+        let interval = TimeInterval(configManager.collectionInterval)
+        collectionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.collectAndSend() }
+        }
+        logManager.log("Collection interval updated to \(configManager.collectionInterval)s")
+    }
+
     private func stopMonitoring() {
         collectionTimer?.invalidate()
         collectionTimer = nil
@@ -233,7 +242,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.consecutiveFailures = 0
                 self.settingsWindow?.close()
                 self.settingsWindow = nil
-                if !self.isMonitoring {
+                if self.isMonitoring {
+                    self.restartTimer()
+                } else {
                     self.startMonitoring()
                 }
             }

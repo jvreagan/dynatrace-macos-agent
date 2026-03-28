@@ -42,7 +42,7 @@ final class MenuBarManager {
         let configItem = NSMenuItem(title: "Settings...", action: nil, keyEquivalent: ",")
         menu.addItem(configItem)
 
-        let logsItem = NSMenuItem(title: "View Logs...", action: nil, keyEquivalent: "l")
+        let logsItem = NSMenuItem(title: "Live Log...", action: nil, keyEquivalent: "l")
         menu.addItem(logsItem)
 
         let openLogFileItem = NSMenuItem(title: "Open Log File", action: nil, keyEquivalent: "")

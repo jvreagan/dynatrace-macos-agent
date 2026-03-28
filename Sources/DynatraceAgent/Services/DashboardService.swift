@@ -125,76 +125,77 @@ struct DashboardService {
         liveURL.replacingOccurrences(of: ".live.dynatrace.com", with: ".apps.dynatrace.com")
     }
 
-    private func buildDashboardContentJSON() -> String {
-        let tiles: [String: Any] = [
-            // Row 1 — CPU & Memory
-            "0": ["type": "data", "title": "CPU Usage %",
-                  "query": "timeseries cpu=avg(macos.cpu.usage), by:{host.name}",
-                  "visualization": "lineChart"],
-            "1": ["type": "data", "title": "Memory Usage %",
-                  "query": "timeseries mem=avg(macos.memory.usage), by:{host.name}",
-                  "visualization": "lineChart"],
-            // Row 2 — Disk & Swap
-            "2": ["type": "data", "title": "Disk Usage %",
-                  "query": "timeseries disk=avg(macos.disk.usage), by:{device, host.name}",
-                  "visualization": "lineChart"],
-            "3": ["type": "data", "title": "Swap Usage %",
-                  "query": "timeseries swap=avg(macos.swap.usage), by:{host.name}",
-                  "visualization": "lineChart"],
-            // Row 3 — Disk I/O
-            "4": ["type": "data", "title": "Disk I/O (bytes/s)",
-                  "query": "timeseries read=avg(macos.disk.io.read_bytes), write=avg(macos.disk.io.write_bytes), by:{device, host.name}",
-                  "visualization": "lineChart"],
-            // Row 4 — Network
-            "5": ["type": "data", "title": "Network Traffic (bytes/s)",
-                  "query": "timeseries net_in=avg(macos.network.bytes_in), net_out=avg(macos.network.bytes_out), by:{interface, host.name}",
-                  "visualization": "lineChart"],
-            "6": ["type": "data", "title": "Network Errors & Drops",
-                  "query": "timeseries err_in=avg(macos.network.errors_in), err_out=avg(macos.network.errors_out), drops=avg(macos.network.drops_in), by:{interface, host.name}",
-                  "visualization": "lineChart"],
-            // Row 5 — GPU & Thermal
-            "7": ["type": "data", "title": "GPU Usage %",
-                  "query": "timeseries gpu=avg(macos.gpu.usage), by:{host.name}",
-                  "visualization": "lineChart"],
-            "8": ["type": "data", "title": "Thermal State (0=nominal 3=critical)",
-                  "query": "timeseries thermal=avg(macos.thermal.state), by:{host.name}",
-                  "visualization": "lineChart"],
-            // Row 6 — Load & Processes
-            "9": ["type": "data", "title": "System Load Average",
-                  "query": "timeseries load1=avg(macos.load.1m), load5=avg(macos.load.5m), load15=avg(macos.load.15m), by:{host.name}",
-                  "visualization": "lineChart"],
-            "10": ["type": "data", "title": "Process Count",
-                   "query": "timeseries procs=avg(macos.process.count), by:{host.name}",
-                   "visualization": "lineChart"],
-            // Row 7 — Battery
-            "11": ["type": "data", "title": "Battery Level %",
-                   "query": "timeseries battery=avg(macos.battery.level), by:{host.name}",
-                   "visualization": "lineChart"],
-            "12": ["type": "data", "title": "Top Processes by Memory",
-                   "query": "timeseries mem=avg(macos.process.top_memory_bytes), by:{process, host.name}",
-                   "visualization": "lineChart"],
-        ]
+    // MARK: - Dashboard tile definitions
+    // Update these if Dynatrace metric keys or DQL syntax changes.
+    // Each entry: (title, DQL query)
+    private static let tiles: [(title: String, query: String)] = [
+        // Row 1 — CPU & Memory
+        ("CPU Usage %",
+         "timeseries cpu=avg(macos.cpu.usage), by:{host.name}"),
+        ("Memory Usage %",
+         "timeseries mem=avg(macos.memory.usage), by:{host.name}"),
+        // Row 2 — Disk & Swap
+        ("Disk Usage %",
+         "timeseries disk=avg(macos.disk.usage), by:{device, host.name}"),
+        ("Swap Usage %",
+         "timeseries swap=avg(macos.swap.usage), by:{host.name}"),
+        // Row 3 — Disk I/O (full width)
+        ("Disk I/O (bytes/s)",
+         "timeseries read=avg(macos.disk.io.read_bytes), write=avg(macos.disk.io.write_bytes), by:{device, host.name}"),
+        // Row 4 — Network
+        ("Network Traffic (bytes/s)",
+         "timeseries net_in=avg(macos.network.bytes_in), net_out=avg(macos.network.bytes_out), by:{interface, host.name}"),
+        ("Network Errors & Drops",
+         "timeseries err_in=avg(macos.network.errors_in), err_out=avg(macos.network.errors_out), drops=avg(macos.network.drops_in), by:{interface, host.name}"),
+        // Row 5 — GPU & Thermal
+        ("GPU Usage %",
+         "timeseries gpu=avg(macos.gpu.usage), by:{host.name}"),
+        ("Thermal State (0=nominal 3=critical)",
+         "timeseries thermal=avg(macos.thermal.state), by:{host.name}"),
+        // Row 6 — Load & Processes
+        ("System Load Average",
+         "timeseries load1=avg(macos.load.1m), load5=avg(macos.load.5m), load15=avg(macos.load.15m), by:{host.name}"),
+        ("Process Count",
+         "timeseries procs=avg(macos.process.count), by:{host.name}"),
+        // Row 7 — Battery & Top Processes
+        ("Battery Level %",
+         "timeseries battery=avg(macos.battery.level), by:{host.name}"),
+        ("Top Processes by Memory",
+         "timeseries mem=avg(macos.process.top_memory_bytes), by:{process, host.name}"),
+    ]
 
-        let layouts: [String: Any] = [
-            "0":  ["x": 0,  "y": 0,  "w": 6,  "h": 4],
-            "1":  ["x": 6,  "y": 0,  "w": 6,  "h": 4],
-            "2":  ["x": 0,  "y": 4,  "w": 6,  "h": 4],
-            "3":  ["x": 6,  "y": 4,  "w": 6,  "h": 4],
-            "4":  ["x": 0,  "y": 8,  "w": 12, "h": 4],
-            "5":  ["x": 0,  "y": 12, "w": 6,  "h": 4],
-            "6":  ["x": 6,  "y": 12, "w": 6,  "h": 4],
-            "7":  ["x": 0,  "y": 16, "w": 6,  "h": 4],
-            "8":  ["x": 6,  "y": 16, "w": 6,  "h": 4],
-            "9":  ["x": 0,  "y": 20, "w": 6,  "h": 4],
-            "10": ["x": 6,  "y": 20, "w": 6,  "h": 4],
-            "11": ["x": 0,  "y": 24, "w": 6,  "h": 4],
-            "12": ["x": 6,  "y": 24, "w": 6,  "h": 4],
-        ]
+    private func buildDashboardContentJSON() -> String {
+        var tilesDict: [String: Any] = [:]
+        for (index, tile) in Self.tiles.enumerated() {
+            tilesDict["\(index)"] = [
+                "type": "data",
+                "title": tile.title,
+                "query": tile.query,
+                "visualization": "lineChart"
+            ]
+        }
+
+        // Tile 4 (Disk I/O) spans full width; all others are half-width (w=6)
+        let fullWidthTiles: Set<Int> = [4]
+        var layouts: [String: Any] = [:]
+        var y = 0
+        var col = 0
+        for index in 0..<Self.tiles.count {
+            let fullWidth = fullWidthTiles.contains(index)
+            let w = fullWidth ? 12 : 6
+            layouts["\(index)"] = ["x": col, "y": y, "w": w, "h": 4]
+            if fullWidth || col == 6 {
+                y += 4
+                col = 0
+            } else {
+                col = 6
+            }
+        }
 
         let content: [String: Any] = [
             "version": "6",
             "variables": [],
-            "tiles": tiles,
+            "tiles": tilesDict,
             "layouts": layouts
         ]
 

@@ -23,3 +23,6 @@ jobs:
 
       - name: Smoke tests
         run: swift Tests/SmokeTest.swift
+
+      - name: Build DMG
+        run: bash Scripts/build-dmg.sh

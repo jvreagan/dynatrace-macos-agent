@@ -20,6 +20,7 @@ ln -s /Applications "$STAGING/Applications"
 
 # Create DMG
 echo "Creating DMG..."
+mkdir -p "$(dirname "$DMG_PATH")"
 rm -f "$DMG_PATH"
 hdiutil create \
     -volname "Dynatrace Agent" \
