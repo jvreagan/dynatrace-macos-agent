@@ -29,7 +29,12 @@ final class MenuBarManager {
 
         startStopMenuItem = NSMenuItem()
 
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let versionItem = NSMenuItem(title: "Version \(version)", action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+
         menu.addItem(statusMenuItem)
+        menu.addItem(versionItem)
         menu.addItem(.separator())
 
         let configItem = NSMenuItem(title: "Settings...", action: nil, keyEquivalent: ",")

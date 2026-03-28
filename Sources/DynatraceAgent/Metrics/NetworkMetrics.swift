@@ -23,7 +23,7 @@ final class NetworkMetrics {
         while let addr = cursor {
             let name = String(cString: addr.pointee.ifa_name)
 
-            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK), name != "lo0" {
+            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK), !NetworkMetrics.isVirtualInterface(name) {
                 let data = unsafeBitCast(addr.pointee.ifa_data, to: UnsafeMutablePointer<if_data>.self)
                 let d = data.pointee
 
@@ -69,5 +69,12 @@ final class NetworkMetrics {
         previousBytes = currentBytes
         previousErrors = currentErrors
         return metrics
+    }
+
+    // Loopback, VPN tunnels, AirDrop, Sidecar, bridges, and other virtual interfaces
+    private static let virtualPrefixes = ["lo", "utun", "awdl", "llw", "bridge", "gif", "stf", "ap"]
+
+    private static func isVirtualInterface(_ name: String) -> Bool {
+        virtualPrefixes.contains(where: { name.hasPrefix($0) })
     }
 }
