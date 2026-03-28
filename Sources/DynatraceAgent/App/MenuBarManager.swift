@@ -19,6 +19,8 @@ final class MenuBarManager {
     init(
         onConfigure: @escaping @MainActor () -> Void,
         onViewLogs: @escaping @MainActor () -> Void,
+        onOpenLogFile: @escaping @MainActor () -> Void,
+        onAbout: @escaping @MainActor () -> Void,
         onQuit: @escaping @MainActor () -> Void
     ) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -43,6 +45,13 @@ final class MenuBarManager {
         let logsItem = NSMenuItem(title: "View Logs...", action: nil, keyEquivalent: "l")
         menu.addItem(logsItem)
 
+        let openLogFileItem = NSMenuItem(title: "Open Log File", action: nil, keyEquivalent: "")
+        menu.addItem(openLogFileItem)
+
+        menu.addItem(.separator())
+        let aboutItem = NSMenuItem(title: "About Dynatrace Agent", action: nil, keyEquivalent: "")
+        menu.addItem(aboutItem)
+
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit", action: nil, keyEquivalent: "q")
         menu.addItem(quitItem)
@@ -52,6 +61,8 @@ final class MenuBarManager {
         let handler = MenuActionHandler(
             onConfigure: onConfigure,
             onViewLogs: onViewLogs,
+            onOpenLogFile: onOpenLogFile,
+            onAbout: onAbout,
             onQuit: onQuit
         )
         _handler = handler
@@ -60,6 +71,10 @@ final class MenuBarManager {
         configItem.action = #selector(MenuActionHandler.configure)
         logsItem.target = handler
         logsItem.action = #selector(MenuActionHandler.viewLogs)
+        openLogFileItem.target = handler
+        openLogFileItem.action = #selector(MenuActionHandler.openLogFile)
+        aboutItem.target = handler
+        aboutItem.action = #selector(MenuActionHandler.about)
         quitItem.target = handler
         quitItem.action = #selector(MenuActionHandler.quit)
 
@@ -118,19 +133,27 @@ final class MenuBarManager {
 final class MenuActionHandler: NSObject {
     private let onConfigure: @MainActor () -> Void
     private let onViewLogs: @MainActor () -> Void
+    private let onOpenLogFile: @MainActor () -> Void
+    private let onAbout: @MainActor () -> Void
     private let onQuit: @MainActor () -> Void
 
     init(
         onConfigure: @escaping @MainActor () -> Void,
         onViewLogs: @escaping @MainActor () -> Void,
+        onOpenLogFile: @escaping @MainActor () -> Void,
+        onAbout: @escaping @MainActor () -> Void,
         onQuit: @escaping @MainActor () -> Void
     ) {
         self.onConfigure = onConfigure
         self.onViewLogs = onViewLogs
+        self.onOpenLogFile = onOpenLogFile
+        self.onAbout = onAbout
         self.onQuit = onQuit
     }
 
     @objc func configure() { onConfigure() }
     @objc func viewLogs() { onViewLogs() }
+    @objc func openLogFile() { onOpenLogFile() }
+    @objc func about() { onAbout() }
     @objc func quit() { onQuit() }
 }

@@ -29,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menuBarManager = MenuBarManager(
             onConfigure: { [weak self] in self?.showSettings() },
             onViewLogs: { [weak self] in self?.showLogs() },
+            onOpenLogFile: { [weak self] in self?.openLogFile() },
+            onAbout: { [weak self] in self?.showAbout() },
             onQuit: { NSApp.terminate(nil) }
         )
 
@@ -212,6 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private var settingsWindow: NSWindow?
     private var logWindow: NSWindow?
+    private var aboutWindow: NSWindow?
 
     private func showSettings() {
         if let window = settingsWindow {
@@ -276,6 +279,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         logWindow = window
     }
 
+    private func openLogFile() {
+        let logURL = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("Logs/DynatraceAgent/agent.log")
+        guard let url = logURL else { return }
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            // File doesn't exist yet — reveal the folder instead
+            let dir = url.deletingLastPathComponent()
+            NSWorkspace.shared.open(dir)
+        }
+    }
+
+    private func showAbout() {
+        if let window = aboutWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 300),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "About Dynatrace Agent"
+        window.contentViewController = NSHostingController(rootView: AboutView())
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        NSApp.activate(ignoringOtherApps: true)
+        aboutWindow = window
+    }
+
     // MARK: - NSWindowDelegate
 
     nonisolated func windowWillClose(_ notification: Notification) {
@@ -283,6 +323,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         MainActor.assumeIsolated {
             if window === settingsWindow { settingsWindow = nil }
             else if window === logWindow { logWindow = nil }
+            else if window === aboutWindow { aboutWindow = nil }
         }
     }
 }
