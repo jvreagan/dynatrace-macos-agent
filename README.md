@@ -6,12 +6,16 @@ A lightweight macOS menu bar app that collects system metrics and sends them to 
 
 | Metric | Description |
 |--------|-------------|
-| CPU usage | Total, user, system, idle |
+| CPU | Usage %, user, system, idle |
 | Memory | Used, free, active, wired, compressed |
-| Disk | Usage % per device |
-| Network | Bytes in/out per interface |
+| Disk | Usage % and I/O bytes/s per device |
+| Network | Bytes in/out and errors/drops per interface |
 | Load average | 1m, 5m, 15m |
 | Swap | Used and usage % |
+| GPU | Usage % and VRAM used/free |
+| Thermal | State (0=nominal → 3=critical) |
+| Battery | Level %, charging state, cycle count, time remaining |
+| Processes | Total count and top 5 by memory |
 
 All metrics are tagged with `host.name` so you can monitor multiple Macs from one environment.
 
@@ -67,27 +71,45 @@ The app runs in your menu bar.
 | Icon | Meaning |
 |------|---------|
 | Green bars | Running — metrics are being sent |
+| Yellow bars | Warning — dashboard creation failed, check OAuth credentials |
+| Red bars | Error — metrics failing to send, check Settings |
 | Gray bars | Idle |
-| Red bars | Error — check Settings |
 
 **Menu options:**
-- **Settings...** — update credentials or configuration
-- **View Logs...** — see what the agent is doing
+- **Settings...** — update credentials or collection interval
+- **Live Log...** — real-time view of what the agent is doing
+- **Open Log File** — reveal the persistent log in Finder (`~/Library/Logs/DynatraceAgent/agent.log`)
+- **About Dynatrace Agent** — version info and links
 - **Quit** — stop the agent
 
-The agent starts automatically when you launch it. Quit the app to stop it.
+The agent starts automatically when you launch it. Quit the app to stop it. You can also enable **Launch at login** in Settings → Advanced.
+
+## Notifications
+
+The agent sends macOS notifications when:
+- Metrics fail to send 3 times in a row — prompting you to check Settings
+- Metrics recover after a failure — so you know it's healthy again without opening the app
 
 ## Building from source
 
-Requires Xcode command line tools and Swift 5.9+.
+Requires Xcode command line tools.
 
 ```bash
 git clone https://github.com/your-username/dynatrace-macos-agent
 cd dynatrace-macos-agent
-Scripts/build-dmg.sh
+bash Scripts/build-dmg.sh
 ```
 
 Then open `build/DynatraceAgent.dmg` and drag the app to Applications.
+
+## Releasing a new version
+
+Tag the commit and push — CI builds the DMG and publishes the release automatically:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
 
 ## License
 
